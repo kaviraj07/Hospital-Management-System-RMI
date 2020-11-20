@@ -1,6 +1,9 @@
 package hospital.management.system;
 
 import java.awt.Color;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -283,6 +286,12 @@ public class Receptionist extends javax.swing.JFrame {
                 JOptionPane.showMessageDialog(null, "Patient record inserted successfully!");
             } catch (JSONException ex) {
                 Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (RemoteException ex) {
+                Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SQLException ex) {
+                Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NotBoundException ex) {
+                Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
             }
 
         } else {
@@ -293,11 +302,14 @@ public class Receptionist extends javax.swing.JFrame {
                 JOptionPane.showMessageDialog(null, "Patient record inserted successfully!");
             } catch (JSONException ex) {
                 Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (RemoteException ex) {
+                Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SQLException ex) {
+                Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NotBoundException ex) {
+                Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
             }
-
         }
-
-
     }//GEN-LAST:event_saveActionPerformed
 
     private void clearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearActionPerformed
@@ -327,16 +339,21 @@ public class Receptionist extends javax.swing.JFrame {
             Checkup chk = new Checkup();
             chk.setVisible(true);
             this.dispose();
-            
+
         } catch (JSONException ex) {
             Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
         } catch (ParseException ex) {
             Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (RemoteException ex) {
+            Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NotBoundException ex) {
+            Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(Receptionist.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
     }//GEN-LAST:event_jButton1ActionPerformed
 
-  
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField address;

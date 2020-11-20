@@ -1,21 +1,26 @@
 package hospital.management.system;
 
+import static hospital.management.system.environment.client_address_ent;
+import static hospital.management.system.environment.ent_port;
+import static hospital.management.system.environment.port;
+import static hospital.management.system.environment.server_address;
+import hospitalInterfaces.SpecialTreatmentInterface;
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
-import java.util.Timer;
-import java.util.TimerTask;
+import javax.swing.JFrame;
 import javax.swing.table.DefaultTableModel;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.simple.parser.ParseException;
+
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -28,12 +33,12 @@ import org.json.simple.parser.ParseException;
  */
 public class ListOfENTPatients extends javax.swing.JFrame {
 
-    public String server_address = environment.server_address;
-
     String patientID;
     String specialTreatmentID;
     DatagramSocket clientSocket;
     InetAddress IPAddress;
+
+    public entTreatment lent;
 
     /**
      * Creates new form Checkup
@@ -42,98 +47,43 @@ public class ListOfENTPatients extends javax.swing.JFrame {
      * @throws java.sql.SQLException
      */
     public ListOfENTPatients() throws ClassNotFoundException, SQLException, JSONException, IOException {
-        initComponents();
-        // createSocket();
-        identify();
-        getPatients();
 
-        Timer t = new Timer();
+        initComponents();
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        getPatients();
+        entTreatment en = new entTreatment(patient_table);
+        lent = en;
+
+        int PORT = ent_port;
+        System.setProperty("java.rmi.server.hostname", client_address_ent);
+        Registry reg = LocateRegistry.createRegistry(PORT);
+
+        rtImplSt p = new rtImplSt(lent);
+
+        reg.rebind("rtST", p);
+        System.out.println("Server from ent running ! ");
+
+        /* Timer t = new Timer();
         t.schedule(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    getNewPatients();
-                } catch (IOException ex) {
-                    Logger.getLogger(ListOfENTPatients.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (JSONException ex) {
-                    Logger.getLogger(ListOfENTPatients.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                getPatients();
 
             }
         }, 0, 1000);
-
-    }
-
-    public void identify() throws JSONException, IOException {
-        DatagramSocket clientSocket = new DatagramSocket();
-        InetAddress IPAddress = InetAddress.getByName(server_address);
-        byte[] send_Data = new byte[1024];
-        // byte[] receive_Data = new byte[1024];
-
-        //putting request parameters in JSONObject
-        JSONObject objData = new JSONObject();
-        objData.put("device_name", "ENT");
-
-        JSONArray dataArr = new JSONArray();
-        dataArr.put(objData);
-
-        JSONObject wrapperObj = new JSONObject();
-        wrapperObj.put("action", "identify_client");
-        wrapperObj.put("data", dataArr);
-
-        //converting object to string
-        String requestString = wrapperObj.toString();
-
-        Arrays.fill(send_Data, (byte) 0);
-        send_Data = requestString.getBytes();
-
-        //sending packet
-        DatagramPacket sendPacket = new DatagramPacket(send_Data, send_Data.length, IPAddress, 81);
-        clientSocket.send(sendPacket);
-
-        clientSocket.close();
+         */
     }
 
     public void getPatients() {
+        DefaultTableModel model = (DefaultTableModel) patient_table.getModel();
+        model.setRowCount(0);
         try {
-            clientSocket = new DatagramSocket(81);
-            IPAddress = InetAddress.getByName(server_address);
 
-            DefaultTableModel model = (DefaultTableModel) patient_table.getModel();
-            model.setRowCount(0);
+            Registry reg = LocateRegistry.getRegistry(server_address, port);
+            SpecialTreatmentInterface myPatients = (SpecialTreatmentInterface) reg.lookup("SpecialTreatmentService");
 
-            byte[] send_Data = new byte[1024];
-            byte[] receive_Data = new byte[1024];
-
-            //putting request parameters in JSONObject
-            JSONObject objData = new JSONObject();
-            objData.put("dept_id", "1");
-            objData.put("status", "incomplete");
-
-            JSONArray dataArr = new JSONArray();
-            dataArr.put(objData);
-
-            JSONObject wrapperObj = new JSONObject();
-            wrapperObj.put("action", "get_patients_for_specialtreatment");
-            wrapperObj.put("data", dataArr);
-
-            //converting object to string
-            String requestString = wrapperObj.toString();
-
-            Arrays.fill(send_Data, (byte) 0);
-            send_Data = requestString.getBytes();
-
-            //sending packet
-            DatagramPacket sendPacket = new DatagramPacket(send_Data, send_Data.length, IPAddress, 81);
-            clientSocket.send(sendPacket);
-
-            //receiving packet
-            DatagramPacket receivePacket = new DatagramPacket(receive_Data, receive_Data.length);
-            clientSocket.receive(receivePacket);
-            String responseString = new String(receivePacket.getData());
-
-            //parsing received data from string to object
-            JSONArray responseArr = new JSONArray(responseString);
+            String serverResponse = myPatients.getPatientsForSpecialTreatment(1, "Incomplete");
+            JSONArray responseArr = new JSONArray(serverResponse);
 
             //displaying data on UI
             Object[] row;
@@ -152,33 +102,9 @@ public class ListOfENTPatients extends javax.swing.JFrame {
                 model.addRow(row);
 
             }
-            clientSocket.close();
-
         } catch (Exception e) {
-
             JOptionPane.showMessageDialog(null, e);
-
         }
-
-    }
-
-    public void getNewPatients() throws IOException, JSONException {
-
-        DatagramSocket serverSocket2 = new DatagramSocket(83);
-        byte[] receiveData2 = new byte[1024];
-
-        DatagramPacket packet2 = new DatagramPacket(receiveData2, receiveData2.length);
-
-        serverSocket2.receive(packet2);
-        String responseString = new String(packet2.getData());
-
-        if (responseString.trim().equals("success")) {
-            getPatients();
-
-        }
-
-        serverSocket2.close();
-
     }
 
     /**
@@ -201,7 +127,6 @@ public class ListOfENTPatients extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(800, 600));
-        setResizable(false);
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
         jPanel1.setMinimumSize(new java.awt.Dimension(800, 600));
@@ -209,6 +134,7 @@ public class ListOfENTPatients extends javax.swing.JFrame {
         jPanel1.setPreferredSize(new java.awt.Dimension(800, 600));
         jPanel1.setLayout(null);
 
+        patient_table.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         patient_table.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
@@ -217,10 +143,13 @@ public class ListOfENTPatients extends javax.swing.JFrame {
                 "First name", "Last name", "Address", "Gender", "Phone number", "DOB", "STID"
             }
         ));
+        patient_table.setRowHeight(70);
+        patient_table.setRowMargin(10);
+        patient_table.setSelectionBackground(new java.awt.Color(153, 153, 153));
         jScrollPane1.setViewportView(patient_table);
 
         jPanel1.add(jScrollPane1);
-        jScrollPane1.setBounds(20, 140, 760, 250);
+        jScrollPane1.setBounds(0, 120, 1390, 450);
 
         cancel_btn.setText("Cancel");
         cancel_btn.addActionListener(new java.awt.event.ActionListener() {
@@ -229,7 +158,7 @@ public class ListOfENTPatients extends javax.swing.JFrame {
             }
         });
         jPanel1.add(cancel_btn);
-        cancel_btn.setBounds(400, 440, 140, 25);
+        cancel_btn.setBounds(740, 610, 140, 40);
 
         editPatient_button.setText("Edit Patient");
         editPatient_button.addActionListener(new java.awt.event.ActionListener() {
@@ -238,7 +167,7 @@ public class ListOfENTPatients extends javax.swing.JFrame {
             }
         });
         jPanel1.add(editPatient_button);
-        editPatient_button.setBounds(240, 440, 140, 25);
+        editPatient_button.setBounds(480, 610, 140, 40);
 
         jLabel2.setBackground(new java.awt.Color(0, 51, 153));
         jLabel2.setFont(new java.awt.Font("Tahoma", 0, 24)); // NOI18N
@@ -247,7 +176,7 @@ public class ListOfENTPatients extends javax.swing.JFrame {
         jLabel2.setText("ENT Department");
         jLabel2.setOpaque(true);
         jPanel1.add(jLabel2);
-        jLabel2.setBounds(140, 60, 520, 30);
+        jLabel2.setBounds(0, 70, 1390, 40);
 
         jLabel3.setBackground(new java.awt.Color(0, 51, 153));
         jLabel3.setFont(new java.awt.Font("Tahoma", 0, 36)); // NOI18N
@@ -256,25 +185,21 @@ public class ListOfENTPatients extends javax.swing.JFrame {
         jLabel3.setText("Hospital Management System");
         jLabel3.setOpaque(true);
         jPanel1.add(jLabel3);
-        jLabel3.setBounds(140, 10, 520, 50);
+        jLabel3.setBounds(0, 0, 1390, 60);
 
-        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Picture_icon/checkupbg.jpg"))); // NOI18N
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Picture_icon/checkupbgedit.jpg"))); // NOI18N
         jPanel1.add(jLabel1);
-        jLabel1.setBounds(0, 0, 800, 600);
+        jLabel1.setBounds(160, 240, 1000, 530);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 1389, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 774, Short.MAX_VALUE)
         );
 
         pack();
@@ -296,8 +221,6 @@ public class ListOfENTPatients extends javax.swing.JFrame {
             object = new ENTPatient(selectedPatientFname, selectedPatientLname, selectedPatientID, selectedPatientSpecialTreatmentID);
             object.setVisible(true);
 
-            //setVisible(false); //you can't see me!
-            //dispose();
         } catch (ParseException | JSONException | ClassNotFoundException | SQLException ex) {
             Logger.getLogger(ListOfENTPatients.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -306,8 +229,7 @@ public class ListOfENTPatients extends javax.swing.JFrame {
 
     private void cancel_btnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancel_btnActionPerformed
         // TODO add your handling code here:
-        setVisible(false); //you can't see me!
-        dispose();
+        this.dispose();
 
     }//GEN-LAST:event_cancel_btnActionPerformed
 
@@ -345,16 +267,18 @@ public class ListOfENTPatients extends javax.swing.JFrame {
             public void run() {
                 try {
                     new ListOfENTPatients().setVisible(true);
+
+                } catch (IOException ex) {
+                    Logger.getLogger(ListOfENTPatients.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (ClassNotFoundException ex) {
                     Logger.getLogger(ListOfENTPatients.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (SQLException ex) {
                     Logger.getLogger(ListOfENTPatients.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (JSONException ex) {
                     Logger.getLogger(ListOfENTPatients.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(ListOfENTPatients.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+
         });
     }
 

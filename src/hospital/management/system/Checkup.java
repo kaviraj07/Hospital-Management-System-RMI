@@ -1,12 +1,16 @@
 package hospital.management.system;
 
+import static hospital.management.system.environment.port;
+import static hospital.management.system.environment.server_address;
+import hospitalInterfaces.PatientInterface;
+import hospitalInterfaces.UserInterface;
 import java.awt.Color;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -16,6 +20,7 @@ import org.json.JSONObject;
 import org.json.simple.parser.ParseException;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
+import java.sql.SQLException;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -28,76 +33,30 @@ import javax.swing.table.TableModel;
  */
 public class Checkup extends javax.swing.JFrame {
 
-    public static String server_add = environment.server_address;
 
     /**
      * Creates new form Checkup
      */
-    public static void createcheck_up() throws JSONException, ParseException {
-        //String server_address = "130.61.44.133";
-        String server_address = server_add;
-                
+    public static void createcheck_up() throws JSONException, ParseException, RemoteException, NotBoundException, SQLException {
+
+        //String server_address = server_add;
 
         try {
-            DatagramSocket clientSocket = new DatagramSocket();
-            InetAddress IPAddress = InetAddress.getByName(server_address);
-            byte[] send_patient_Data = new byte[1024];
-            byte[] send_doctor_Data = new byte[1024];
+            Registry reg = LocateRegistry.getRegistry(server_address, port);
+            PatientInterface myPatients = (PatientInterface) reg.lookup("PatientService");
+            String patients = myPatients.getAllPatients();
+            UserInterface ui = (UserInterface) reg.lookup("UserService");
+            String docs = ui.getAllDoctors(2);
 
-            byte[] receive_patient_Data = new byte[1024];
-            byte[] receive_doctor_Data = new byte[1024];
-
-            JSONObject patientdata = new JSONObject();
-            JSONObject doctordata = new JSONObject();
-
-            patientdata.put("action", "get_all_patients");
-
-            JSONObject objData = new JSONObject();
-            objData.put("departmentid", "2");
-
-            JSONArray dataArr = new JSONArray();
-            dataArr.put(objData);
-            JSONObject wrapperObj = new JSONObject();
-            wrapperObj.put("action", "get_all_doctors");
-            wrapperObj.put("data", dataArr);
-
-            doctordata.put("action", "get_all_doctors");
-
-            String patientString = patientdata.toString();
-            String requestString = wrapperObj.toString();
-
-            Arrays.fill(send_patient_Data, (byte) 0);
-            send_patient_Data = patientString.getBytes();
-
-            Arrays.fill(send_doctor_Data, (byte) 0);
-            send_doctor_Data = requestString.getBytes();
-
-            DatagramPacket sendPacket = new DatagramPacket(send_patient_Data, send_patient_Data.length, IPAddress, 81);
-
-            DatagramPacket sendPacket1 = new DatagramPacket(send_doctor_Data, send_doctor_Data.length, IPAddress, 81);
-
-            clientSocket.send(sendPacket);
-            clientSocket.send(sendPacket1);
-
-            DatagramPacket receivePacket = new DatagramPacket(receive_patient_Data, receive_patient_Data.length);
-
-            DatagramPacket receivePacket1 = new DatagramPacket(receive_doctor_Data, receive_doctor_Data.length);
-
-            clientSocket.receive(receivePacket);
-            clientSocket.receive(receivePacket1);
-
-            String response = new String(receivePacket.getData());
-            String response1 = new String(receivePacket1.getData());
-
-            JSONArray a = new JSONArray(response);
-            JSONArray b = new JSONArray(response1);
+            JSONArray patientArr = new JSONArray(patients);
+            JSONArray docsArr = new JSONArray(docs);
 
             DefaultTableModel model = (DefaultTableModel) patienttable.getModel();
             Object[] row;
-            for (int i = 0; i < a.length(); i++) {
+            for (int i = 0; i < patientArr.length(); i++) {
 
                 row = new Object[6];
-                JSONObject o = a.getJSONObject(i);
+                JSONObject o = patientArr.getJSONObject(i);
                 row[0] = o.getString("id");
                 row[1] = o.getString("fname");
                 row[2] = o.getString("lname");
@@ -110,10 +69,10 @@ public class Checkup extends javax.swing.JFrame {
 
             DefaultTableModel model1 = (DefaultTableModel) doctortabledata.getModel();
             Object[] row1;
-            for (int i = 0; i < b.length(); i++) {
+            for (int i = 0; i < docsArr.length(); i++) {
 
                 row1 = new Object[4];
-                JSONObject ob = b.getJSONObject(i);
+                JSONObject ob = docsArr.getJSONObject(i);
                 row1[0] = ob.getString("id");
                 row1[1] = ob.getString("fname");
                 row1[2] = ob.getString("lname");
@@ -128,7 +87,7 @@ public class Checkup extends javax.swing.JFrame {
 
     }
 
-    public Checkup() throws JSONException, ParseException {
+    public Checkup() throws JSONException, ParseException, RemoteException, NotBoundException, SQLException {
         initComponents();
         jLabel2.setBackground(new Color(0, 51, 153, 180));
         backbtn.setBackground(new Color(0, 51, 153, 180));
@@ -498,6 +457,12 @@ public class Checkup extends javax.swing.JFrame {
                 JOptionPane.showMessageDialog(null, "Checkup successfully recorded!");
             } catch (JSONException ex) {
                 Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (RemoteException ex) {
+                Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NotBoundException ex) {
+                Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SQLException ex) {
+                Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
             }
 
         }
@@ -577,6 +542,12 @@ public class Checkup extends javax.swing.JFrame {
                     Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (ParseException ex) {
                     Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (RemoteException ex) {
+                    Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (NotBoundException ex) {
+                    Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (SQLException ex) {
+                    Logger.getLogger(Checkup.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         });
@@ -610,13 +581,3 @@ public class Checkup extends javax.swing.JFrame {
     private javax.swing.JButton save;
     // End of variables declaration//GEN-END:variables
 }
-/*
-
-
-
-
-
-
-
-
- */

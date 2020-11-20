@@ -5,12 +5,15 @@
  */
 package hospital.management.system;
 
+import hospitalInterfaces.CheckupInterface;
+import hospitalInterfaces.SpecialTreatmentInterface;
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,10 +33,9 @@ public class save_diagnostic {
     public JComboBox<String> specialtrtCombo;
     public JTextArea txtAreaDiagnosis;
 
-    
     public String server_address = environment.server_address;
-    
-    public int port = 81;
+    public int port = environment.port;
+
     public String cid = "";
 
     //constructor
@@ -54,7 +56,7 @@ public class save_diagnostic {
     }
 
     //used to update the checkup status only
-    public void updateChkUp() {
+    public void updateChkUp() throws RemoteException, NotBoundException, SQLException {
         // change status and diagnosis of a checkup
         String mydiagnosis = txtAreaDiagnosis.getText().trim();
         JSONObject dataObj = new JSONObject();
@@ -75,34 +77,18 @@ public class save_diagnostic {
         }
 
         try {
-            DatagramSocket clientSocket = new DatagramSocket();
-            InetAddress IPAddress = InetAddress.getByName(server_address);
-            byte[] sendData = new byte[1024];
-            byte[] receiveData = new byte[1024];
+            Registry reg = LocateRegistry.getRegistry(server_address, port);
+            CheckupInterface myPatients = (CheckupInterface) reg.lookup("CheckupService");
 
-            sendData = serviceObj.toString().getBytes();
+            boolean patients = myPatients.updateCheckup(Integer.parseInt(cid), mydiagnosis, "complete");
 
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
-            clientSocket.send(sendPacket);
-
-            //DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            //clientSocket.receive(receivePacket);
-
-            //String receivedResponse = new String(receivePacket.getData());
-            //System.out.println("FROM SERVER:" + receivedResponse);
-
-        } catch (SocketException ex) {
-            Logger.getLogger(diagnosticScreen.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(diagnosticScreen.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(diagnosticScreen.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
 
     //used to add the special treatment only
-    public void addTreatment() {
+    public void addTreatment() throws RemoteException, NotBoundException, SQLException {
         String spTrt = specialtrtCombo.getSelectedItem().toString();
         String deptId = "";
 
@@ -114,19 +100,17 @@ public class save_diagnostic {
                     deptId = "1";
                     break;
                 case "X-Ray":
-                    deptId = "2";
+                    deptId = "1";
                     break;
                 case "ICU":
-                    deptId = "3";
+                    deptId = "1";
                     break;
                 case "MRI":
-                    deptId = "4";
+                    deptId = "1";
                     break;
 
             }
 
-            //System.out.println(deptId);
-            //JSON object/array initialisation
             JSONObject infoObj = new JSONObject();
             JSONObject sendObj = new JSONObject();
             JSONArray infoArr = new JSONArray();
@@ -138,32 +122,12 @@ public class save_diagnostic {
             DatagramSocket clientSocket;
 
             try {
-                infoObj.put("departmentid", deptId);
-                infoObj.put("checkupid", cid);
-                infoObj.put("date", myDateStr);
-                infoArr.put(infoObj);
+                Registry reg = LocateRegistry.getRegistry(server_address, port);
+                SpecialTreatmentInterface myPatients = (SpecialTreatmentInterface) reg.lookup("SpecialTreatmentService");
 
-                sendObj.put("action", "add_special_treatment");
-                sendObj.put("data", infoArr);
+                boolean patients = myPatients.createSpecialTreatment(Integer.parseInt(cid), myDateStr, Integer.parseInt(deptId));
 
-                clientSocket = new DatagramSocket();
-                InetAddress IPAddress = InetAddress.getByName(server_address);
-                byte[] sendData = new byte[1024];
-                byte[] receiveData = new byte[1024];
-
-                sendData = sendObj.toString().getBytes();
-
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
-                clientSocket.send(sendPacket);
-
-              /*  DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                clientSocket.receive(receivePacket);
-
-                String receivedResponse = new String(receivePacket.getData());
-                System.out.println("FROM SERVER:" + receivedResponse);
-*/
-            } catch (JSONException ex) {
-                Logger.getLogger(diagnosticScreen.class.getName()).log(Level.SEVERE, null, ex);
+              
             } catch (IOException ex) {
                 Logger.getLogger(diagnosticScreen.class.getName()).log(Level.SEVERE, null, ex);
             }

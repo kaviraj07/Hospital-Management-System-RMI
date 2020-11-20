@@ -1,17 +1,18 @@
 package hospital.management.system;
 
+import static hospital.management.system.environment.port;
+import static hospital.management.system.environment.server_address;
+import hospitalInterfaces.PatientInterface;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.util.Arrays;
-import org.json.JSONArray;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.sql.SQLException;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 public class UDPClient {
 
-    public static String server_address = "192.168.43.66";
     String fname, lname, address, phone, ID, DOB, gender;
 
     public UDPClient() {
@@ -28,8 +29,17 @@ public class UDPClient {
 
     }
 
-    public void sendData() throws JSONException {
+    public void sendData() throws JSONException, RemoteException, SQLException, NotBoundException {
         try {
+            Registry r = LocateRegistry.getRegistry(server_address, port);
+            String result = "";
+            String result1 = "";
+            Boolean result2 = false;
+            PatientInterface patient = (PatientInterface) r.lookup("PatientService");
+            result = patient.getAllPatients();
+            result2 = patient.createPatient(fname, lname, phone, address, DOB, gender);
+
+            /*
             DatagramSocket clientSocket = new DatagramSocket();
             InetAddress IPAddress = InetAddress.getByName(server_address);
             byte[] send_Data = new byte[1024];
@@ -54,7 +64,7 @@ public class UDPClient {
             Arrays.fill(send_Data, (byte) 0);
             send_Data = clientString.getBytes();
 
-            DatagramPacket sendPacket = new DatagramPacket(send_Data, send_Data.length, IPAddress, 81);
+            DatagramPacket sendPacket = new DatagramPacket(send_Data, send_Data.length, IPAddress, port);
             clientSocket.send(sendPacket);
 
             DatagramPacket receivePacket = new DatagramPacket(receive_Data, receive_Data.length);
@@ -63,11 +73,10 @@ public class UDPClient {
 
             System.out.print("RESPONSE FROM SERVER: " + serverResponse);
             clientSocket.close();
+
+             */
         } catch (IOException e) {
             System.out.println(e.toString());
-
         }
-
     }
-
 }

@@ -1,18 +1,19 @@
 package hospital.management.system;
 
+import static hospital.management.system.environment.port;
+import static hospital.management.system.environment.server_address;
+import hospitalInterfaces.UserInterface;
 import java.awt.Color;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.rmi.NotBoundException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
+
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -28,12 +29,12 @@ public class Login extends javax.swing.JFrame {
     /**
      * Creates new form Login
      */
-    public static String server_address = environment.server_address;
 
     public Login() {
         initComponents();
         loginpanel.setBackground(new Color(0, 51, 153, 180));
         loginbtn.setBackground(new Color(255, 255, 255, 180));
+        this.getRootPane().setDefaultButton(loginbtn);
     }
 
     /**
@@ -66,7 +67,8 @@ public class Login extends javax.swing.JFrame {
 
         jLabel2.setFont(new java.awt.Font("Dialog", 0, 18)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel2.setText("Username:");
+        jLabel2.setText("Email:");
+        jLabel2.setToolTipText("");
 
         jLabel3.setFont(new java.awt.Font("Dialog", 0, 18)); // NOI18N
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
@@ -160,32 +162,10 @@ public class Login extends javax.swing.JFrame {
         }
 
         try {
+            Registry reg = LocateRegistry.getRegistry(server_address, port);
+            UserInterface user = (UserInterface) reg.lookup("UserService");
 
-            DatagramSocket clientSocket = new DatagramSocket();
-            InetAddress IPAddress = InetAddress.getByName(server_address);
-            byte[] send_Data = new byte[1024];
-            byte[] receive_Data = new byte[1024];
-            JSONObject clientJson = new JSONObject();
-
-            clientJson.put("email", name);
-            clientJson.put("password", pwd);
-
-            JSONArray clientJsonArr = new JSONArray();
-            clientJsonArr.put(clientJson);
-            JSONObject finalObject = new JSONObject();
-            finalObject.put("action", "login");
-            finalObject.put("data", clientJsonArr);
-
-            String clientString = finalObject.toString();
-            Arrays.fill(send_Data, (byte) 0);
-            send_Data = clientString.getBytes();
-
-            DatagramPacket sendPacket = new DatagramPacket(send_Data, send_Data.length, IPAddress, 81);
-            clientSocket.send(sendPacket);
-            DatagramPacket receivePacket = new DatagramPacket(receive_Data, receive_Data.length);
-            clientSocket.receive(receivePacket);
-            String serverResponse = new String(receivePacket.getData()).trim();
-            System.out.print("RESPONSE FROM SERVER: " + serverResponse);
+            String serverResponse = user.login(name, pwd);
 
             switch (serverResponse) {
                 case "RECEPTIONIST":
@@ -216,6 +196,8 @@ public class Login extends javax.swing.JFrame {
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(Login.class.getName()).log(Level.SEVERE, null, ex);
         } catch (SQLException ex) {
+            Logger.getLogger(Login.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NotBoundException ex) {
             Logger.getLogger(Login.class.getName()).log(Level.SEVERE, null, ex);
         }
 

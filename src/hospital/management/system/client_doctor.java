@@ -5,14 +5,17 @@
  */
 package hospital.management.system;
 
+import static hospital.management.system.environment.port;
+import static hospital.management.system.environment.server_address;
+import hospitalInterfaces.CheckupInterface;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JTable;
@@ -28,9 +31,7 @@ import org.json.simple.parser.JSONParser;
  */
 public class client_doctor {
 
-    public String server_address = environment.server_address;
-    public int port = 81;
-    public int listening_port = 82;
+  
     public String doctor_id = "2";
     public JTable patientsTbl;
 
@@ -41,37 +42,18 @@ public class client_doctor {
 
     DefaultTableModel model;
 
-    //updates table with values from UDP
-    public void refresh() throws SocketException, UnknownHostException, IOException {
+    //updates table with values 
+    public void refresh() throws SocketException, UnknownHostException, IOException, RemoteException, SQLException, NotBoundException {
         JSONObject request = new JSONObject();
         JSONObject docDet = new JSONObject();
         JSONArray reqArr = new JSONArray();
 
         try {
+            Registry reg = LocateRegistry.getRegistry(server_address, port);
+            CheckupInterface myPatients = (CheckupInterface) reg.lookup("CheckupService");
 
-            docDet.put("doctorid", doctor_id);
-            docDet.put("status", "incomplete");
-            reqArr.put(docDet);
-            request.put("data", reqArr);
-            request.put("action", "get_checkups_of_doctor");
-
-            DatagramSocket clientSocket = new DatagramSocket();
-            InetAddress IPAddress = InetAddress.getByName(server_address);
-            byte[] sendData = new byte[1024];
-            byte[] receiveData = new byte[1024];
-
-            sendData = request.toString().getBytes();
-
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
-            clientSocket.send(sendPacket);
-
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            clientSocket.receive(receivePacket);
-
-            String receivedResponse = new String(receivePacket.getData());
-            System.out.println("FROM SERVER:" + receivedResponse);
-
-            JSONArray receivedJson = new JSONArray(receivedResponse);
+            String patients = myPatients.getCheckups("incomplete", Integer.parseInt(doctor_id));
+            JSONArray receivedJson = new JSONArray(patients);
             JSONParser parser = new JSONParser();
             model.setRowCount(0);
             for (int i = 0; i < receivedJson.length(); i++) {
@@ -86,18 +68,12 @@ public class client_doctor {
                     o.getString("checkup_status")
 
                 };
-
                 DefaultTableModel patientmdl = (DefaultTableModel) patientsTbl.getModel();
                 patientmdl.addRow(data);
-
             }
-
-            clientSocket.close();
-
         } catch (JSONException ex) {
             Logger.getLogger(myPatients.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
 
     //define table model
@@ -110,57 +86,5 @@ public class client_doctor {
         model.addColumn("Name");
         model.addColumn("Reason");
         model.addColumn("Status");
-
     }
-
-    //Real Time update using local server - same network
-    public void rt_updater() throws SocketException, UnknownHostException, IOException {
-        DatagramSocket clientSocket = new DatagramSocket();
-
-        //InetAddress IPAddress = InetAddress.getByName(local_address);
-        InetAddress IPAddress = InetAddress.getByName(server_address);
-
-        byte[] sendData = new byte[1024];
-
-        //client identification for server
-        String request = "{'action':'identify_client',data:[{'device_name':'General Doctor'}]}";
-
-        sendData = request.toString().getBytes();
-
-        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
-        clientSocket.send(sendPacket);
-
-        Timer t = new Timer();
-        t.schedule(new TimerTask() {
-            @Override
-            public void run() {
-
-                try {
-                    DatagramSocket serverSocket2;
-                    serverSocket2 = new DatagramSocket(listening_port);
-                    byte[] receiveData2 = new byte[1024];
-                    System.out.println("Client ready...");
-
-                    DatagramPacket receivePacket2 = new DatagramPacket(receiveData2, receiveData2.length);
-                    serverSocket2.receive(receivePacket2);
-                    System.out.println("Client connected");
-
-                    String sentence = new String(receivePacket2.getData());
-
-                    if (sentence.trim().equals("success")) {
-                        refresh();
-                    }
-                    System.out.println(sentence);
-                    serverSocket2.close();
-
-                } catch (SocketException ex) {
-                    Logger.getLogger(myPatients.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(myPatients.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }, 0, 1000);
-
-    }
-
 }
