@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-12">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="D:/Applied Computing YEAR 3/2. Distributed Systems and Cloud Computing - DGT 3122Y/Distributed Systems Assignment 2 - RMI/To Submit/Group 9 - Hospital Management System RMI/Hospital Management System RMI/dist/lib/HospitalInterfaces.jar"/>
+	<classpathentry kind="lib" path="D:/Applied Computing YEAR 3/2. Distributed Systems and Cloud Computing - DGT 3122Y/Distributed Systems Assignment 2 - RMI/To Submit/Group 9 - Hospital Management System RMI/Hospital Management System RMI/dist/lib/java-json.jar"/>
+	<classpathentry kind="lib" path="D:/Applied Computing YEAR 3/2. Distributed Systems and Cloud Computing - DGT 3122Y/Distributed Systems Assignment 2 - RMI/To Submit/Group 9 - Hospital Management System RMI/Hospital Management System RMI/dist/lib/json-simple-1.1.jar"/>
+	<classpathentry kind="lib" path="D:/Applied Computing YEAR 3/2. Distributed Systems and Cloud Computing - DGT 3122Y/Distributed Systems Assignment 2 - RMI/To Submit/Group 9 - Hospital Management System RMI/Hospital Management System RMI/dist/lib/mysql-connector-java-8.0.19.jar"/>
+	<classpathentry kind="lib" path="D:/Applied Computing YEAR 3/2. Distributed Systems and Cloud Computing - DGT 3122Y/Distributed Systems Assignment 2 - RMI/To Submit/Group 9 - Hospital Management System RMI/Hospital Management System RMI/dist/lib/RealTimeCheckupsInterface.jar"/>
+	<classpathentry kind="lib" path="D:/Applied Computing YEAR 3/2. Distributed Systems and Cloud Computing - DGT 3122Y/Distributed Systems Assignment 2 - RMI/To Submit/Group 9 - Hospital Management System RMI/Hospital Management System RMI/dist/lib/RealTimeSTInterface.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
