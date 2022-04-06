@@ -2,6 +2,8 @@
 
 This is a Hospital Management System using Java RMI. This is a deliverable for the module Distributed Systems and Cloud Computing. The General Doctor client side of the applicaton was implemented by me. The rest was distributed among teammates.
 
+Purpose of the project was to demonstrate **RMI**
+
 ## Source Code:
 1. HospitalImplementations folder is the server implementation of the system. It needs to be run as a separate project.
 2. The remaining files are the source code for the client side of the system.
