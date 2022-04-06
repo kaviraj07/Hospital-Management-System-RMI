@@ -7,6 +7,7 @@ Purpose of the project was to demonstrate **RMI**
 ## Source Code:
 1. HospitalImplementations folder is the server implementation of the system. It needs to be run as a separate project.
 2. The remaining files are the source code for the client side of the system.
+3. hospital_system.sql is the DB dump to restore DB
 
 ## Teammates:
 1. Kaviraj Gosaye
